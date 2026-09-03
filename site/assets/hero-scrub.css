@@ -1,0 +1,266 @@
+/*!
+ * 10K Websites - hero scrub floor  v0.1.0
+ *
+ * THE ENGINEERING FLOOR ONLY: the legibility system, the band scaffolding, the
+ * entrance mechanics, the five static-hero gates, reduced motion, overflow, and
+ * the accessibility minimums. Every value that carries taste is a token at the
+ * top, left blank on purpose. Fill the tokens from the design package, add your
+ * own sections and motifs, and invent entrances beyond the menu below.
+ *
+ * The rule the menu never breaks: transform and opacity only, scrubbed off the
+ * band's --k, fully reversible on scroll-up. Band one's load ramp is the single
+ * designed exception and the JS already handles it.
+ */
+
+/* ------------------------------------------------------------------ tokens */
+/* Fill these from the design package. Sample the palette from the approved
+   footage so the page and the video read as one place. The canvas is never
+   pure #000 or #fff: tint it toward the footage's grade. */
+:root{
+  --canvas:#0b0d12;         /* page background, tinted toward the grade */
+  --panel:#141821;          /* cards and raised surfaces */
+  --accent:#e0e0e0;         /* the CTA and rare emphasis */
+  --accent-hover:#ffffff;
+  --accent-muted:#3a4152;   /* whisper level: borders, glows, particles */
+  --text-primary:#f4f2ec;
+  --text-secondary:#a8adba;
+
+  --font-display:Georgia,serif;   /* a face with real character. Never Inter or Roboto here. */
+  --font-body:system-ui,sans-serif;
+  --font-mono:ui-monospace,monospace;
+
+  /* Three layers: a tight edge, a mid glow, a wide falloff. */
+  --tshadow:0 1px 2px rgba(5,5,10,.95),0 3px 12px rgba(5,5,10,.78),0 10px 44px rgba(5,5,10,.8);
+
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+}
+
+/* -------------------------------------------------------- page mechanics */
+/* hidden first as a fallback: hidden alone still lets code scroll the page
+   sideways, and one anchor link can leave the whole page shifted. */
+html,body{overflow-x:hidden;overflow-x:clip}
+body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-body);margin:0}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+
+.skip{position:absolute;left:-9999px;top:0;z-index:100;padding:.75rem 1.25rem;
+  background:var(--panel);color:var(--text-primary)}
+.skip:focus{left:0}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* Added without changing layout. Never swap display without re-declaring
+   alignment: a bare inline-flex left-aligns labels and shrinks full-width rows. */
+@media (pointer:coarse){
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+}
+
+/* Pause everything on a hidden tab. animation-play-state is NOT inherited, so a
+   value on a container silently never reaches nested elements or pseudos. */
+body.paused *,body.paused *::before,body.paused *::after{animation-play-state:paused!important}
+
+/* ------------------------------------------------------------------ hero */
+/* Size the hero in scroll distance, not seconds: about 400vh for a single
+   6-second shot, about 1000vh for a chained 18-second journey. */
+#hero{position:relative;height:400vh}
+#hero-stage{position:sticky;top:0;height:100vh;overflow:hidden;isolation:isolate}
+
+#hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity .6s var(--ease);
+  will-change:transform;transform:translateZ(0)}   /* its own compositor layer */
+#hero-stage.video-ready #hero-video{opacity:1}
+#hero-stage.video-failed #hero-video{display:none}
+
+.poster{position:absolute;inset:0;background-size:cover;background-position:center;
+  background-repeat:no-repeat}
+
+/* LAYER 1 of the legibility system: one soft radial darkening over the whole
+   video, always on, so no frame is ever raw behind the page. */
+.scrim{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 120% 90% at 50% 45%,
+    rgba(10,10,18,0) 35%,rgba(10,10,18,.62) 100%)}
+
+/* the progress ring */
+.ring{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);
+  width:48px;height:48px;color:var(--text-secondary);transition:opacity .4s var(--ease)}
+.ring circle{transition:stroke-dashoffset .12s linear}
+#hero-stage.video-ready .ring{opacity:0;pointer-events:none}
+.ring.is-failed{opacity:0}   /* an honest cue replaces it, never a stuck ring */
+
+/* ------------------------------------------------------------------ bands */
+.band{position:absolute;inset:0;display:grid;align-content:center;
+  padding:clamp(1.5rem,5vw,6rem);pointer-events:none;
+  text-shadow:var(--tshadow)}
+.band .btn{text-shadow:none}   /* a shadowed label reads as grime */
+.band a,.band button{pointer-events:auto}
+
+/* LAYER 2: the per-band scrim, riding the band's opacity and deepening with --k,
+   so the footage dims exactly while that band's text is on and nowhere else.
+   Dim, never flatten: it dies out by 76% so the corners stay live.
+   Tune the peak alpha per band against that band's ACTUAL frames.
+   Proven range: .62 for quiet beats up to .72 for the hook. */
+.band::before{content:"";position:absolute;inset:-4%;pointer-events:none;
+  opacity:calc(.25 + .75*var(--k,1));
+  background:radial-gradient(ellipse 74% 62% at 50% 50%,
+    rgba(5,5,10,.66) 0%,rgba(5,5,10,.44) 46%,rgba(5,5,10,0) 76%)}
+
+/* The two-sided variant for a CENTERED subject with text columns on both sides.
+   Never stretch one scrim across the middle: leave the centre lane alone so the
+   subject stays bright. Add .band--split to the band. */
+.band--split::before{inset:-4% auto -4% -4%;width:46%;
+  background:radial-gradient(ellipse 90% 62% at 50% 50%,
+    rgba(5,5,10,.66) 0%,rgba(5,5,10,.44) 46%,rgba(5,5,10,0) 76%)}
+.band--split::after{content:"";position:absolute;inset:-4% -4% -4% auto;width:46%;
+  pointer-events:none;opacity:calc(.25 + .75*var(--k,1));
+  background:radial-gradient(ellipse 90% 62% at 50% 50%,
+    rgba(5,5,10,.66) 0%,rgba(5,5,10,.44) 46%,rgba(5,5,10,0) 76%)}
+
+/* LAYER 4: the chip, for HUD lines, readouts and small labels over footage.
+   Small text does not get the big radial. */
+.chip{background:rgba(8,8,15,.55);border:1px solid rgba(96,96,126,.3);
+  border-radius:10px;backdrop-filter:blur(10px);padding:.4rem .75rem;
+  text-shadow:0 1px 3px rgba(5,5,10,.85);font-family:var(--font-mono);font-size:.8rem}
+
+/* Size text blocks in ch on the TEXT element, never on a container: a ch
+   resolves against the font the element inherits, not the display face inside. */
+.band h1,.band h2{font-family:var(--font-display);max-width:18ch;margin:0}
+.band p{max-width:46ch}
+
+/* Masked or clipped reveals need descender room or g, y and p lose their tails. */
+.mask{overflow:hidden;padding:.18em 0;margin:-.18em 0}
+
+/* ------------------------------------------------- entrances (the menu) */
+/* All of these run on --k, published by the drive loop. Transform and opacity
+   only. Add data-entrance="scatter" (etc) to a band, or invent your own: the
+   invention is the job, the mechanics above are the fixed part. */
+.split .w{display:inline-block;white-space:pre}
+.split .c{display:inline-block;will-change:transform,opacity}
+
+/* (a) scatter - echoes ink gathering, particles assembling, debris settling */
+[data-entrance="scatter"] .c{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*2.6,1);opacity:var(--kc);
+  transform:translate(calc((1 - var(--kc))*var(--jx,0px)),calc((1 - var(--kc))*var(--jy,0px)))
+            rotate(calc((1 - var(--kc))*var(--jr,0deg)))}
+
+/* (b) grid snap-align - characters slide in reading order (ordered --th) */
+[data-entrance="grid"] .c{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*2.6,1);opacity:var(--kc);
+  transform:translateX(calc((1 - var(--kc))*var(--jx,0px)))}
+
+/* (c) blur-to-sharp - the quiet beat; echoes mist clearing or focus arriving.
+   Two stacked copies crossfaded by OPACITY only. The soft copy carries a STATIC
+   blur: never animate filter itself, it is not compositor-friendly. */
+[data-entrance="blur"]{position:relative}
+[data-entrance="blur"] .soft{position:absolute;inset:0;filter:blur(10px);
+  opacity:calc(1 - var(--k,0))}
+[data-entrance="blur"] .sharp{opacity:var(--k,0)}
+
+/* (d) word-punch with overshoot - echoes an impact landing */
+[data-entrance="punch"] .w{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*3,1);
+  --ks:clamp(0,(var(--k,0) - var(--th,0) - var(--sd,.1))*var(--ss,3.2),1);
+  opacity:var(--kc);
+  transform:scale(calc(0.6 + (0.4 + var(--ov,.12))*var(--kc) - var(--ov,.12)*var(--ks)))}
+[data-entrance="punch"] .w.em{--ov:0.24;--sd:0.16;--ss:2.6}
+
+/* (e) word-by-word rise into a staged settle - the proven ending entrance.
+   Three arrivals, one band: headline words, then subline, then the CTA row. */
+[data-entrance="settle"] .w{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*2.8,1);opacity:var(--kc);
+  transform:translateY(calc((1 - var(--kc))*22px))}
+[data-entrance="settle"] .sub{--ks:clamp(0,(var(--k,0) - .66)*4,1);
+  opacity:var(--ks);transform:translateY(calc((1 - var(--ks))*14px))}
+[data-entrance="settle"] .cta{--kb:clamp(0,(var(--k,0) - .78)*5,1);
+  opacity:var(--kb);transform:translateY(calc((1 - var(--kb))*14px))}
+
+/* (f) drift-down - echoes a fall or a pour */
+[data-entrance="drift"] .w{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*2.8,1);opacity:var(--kc);
+  transform:translateY(calc((1 - var(--kc))*-24px))}
+
+/* (g) approach-from-depth - echoes a tunnel or a forward push */
+[data-entrance="approach"] .w{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*2.6,1);opacity:var(--kc);
+  transform:scale(calc(0.82 + 0.18*var(--kc)))}
+
+/* (h) halves parting - echoes folds opening or curtains parting */
+[data-entrance="part"] .half{--kc:var(--k,0);opacity:var(--kc)}
+[data-entrance="part"] .half-l{transform:translateX(calc((1 - var(--k,0))*8%))}
+[data-entrance="part"] .half-r{transform:translateX(calc((1 - var(--k,0))*-8%))}
+
+/* (i) weave - echoes threads crossing; --jy signs alternate by character index */
+[data-entrance="weave"] .c{
+  --kc:clamp(0,(var(--k,0) - var(--th,0))*2.6,1);opacity:var(--kc);
+  transform:translateY(calc((1 - var(--kc))*var(--jy,0px)))}
+[data-entrance="weave"] .c:nth-child(even){--jy:-38px}
+
+/* --------------------------------------------------- entrances on scroll */
+/* Start and end states are prefixed with the container class so a later rule
+   cannot silently win the cascade and kill the animation. */
+.reveal .part{opacity:0;transform:translateY(18px);
+  transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.reveal.in .part{opacity:1;transform:none}
+.reveal.in .part:nth-child(2){transition-delay:.09s}
+.reveal.in .part:nth-child(3){transition-delay:.18s}
+.reveal.in .part:nth-child(4){transition-delay:.27s}
+
+/* RETIRE the stagger once the entrance is done, or every hover on the later
+   siblings lags forever. :nth-child counts as a class, so the cleanup rule must
+   match or beat the specificity of the delay rules it retires. Prove it by
+   hovering the second and third items after the entrance finishes. */
+.reveal.done .part,
+.reveal.done .part:nth-child(2),
+.reveal.done .part:nth-child(3),
+.reveal.done .part:nth-child(4){transition-delay:0s}
+
+/* ------------------------------------------------- the five static gates */
+/* These five queries must stay CHARACTER-FOR-CHARACTER identical to GATES in
+   hero-scrub.js, or one side loads the assets the other side hides. */
+.static-hero{display:none}
+
+@media (max-width: 720px){
+  #hero{height:auto}#hero-stage{position:relative;height:100svh}
+  .band{display:none}.static-hero{display:grid}.ring{display:none}
+}
+@media (orientation: portrait) and (max-width: 1024px){
+  #hero{height:auto}#hero-stage{position:relative;height:100svh}
+  .band{display:none}.static-hero{display:grid}.ring{display:none}
+}
+@media (orientation: portrait) and (pointer: coarse){
+  #hero{height:auto}#hero-stage{position:relative;height:100svh}
+  .band{display:none}.static-hero{display:grid}.ring{display:none}
+}
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 560px){
+  #hero{height:auto}#hero-stage{position:relative;height:100svh}
+  .band{display:none}.static-hero{display:grid}.ring{display:none}
+}
+@media (prefers-reduced-motion: reduce){
+  #hero{height:auto}#hero-stage{position:relative;height:100svh}
+  .band{display:none}.static-hero{display:grid}.ring{display:none}
+}
+
+/* Scrub-capable but merely SHORT (a shallow desktop window, not a phone):
+   keep the scrub, hide the small scroll-driven overlays that have no room. */
+@media (max-height:560px){.cue,.hud,.feed{display:none}}
+
+/* ---------------------------------------------------- reduced motion, all */
+/* Honored COMPLETELY: elements and pseudos, every delay zeroed, every
+   choreographed element shown in its final finished state. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;transition-delay:0s!important;
+    scroll-behavior:auto!important}
+  .reveal .part{opacity:1;transform:none}
+  .split .c,.split .w{opacity:1;transform:none}
+  [data-entrance="blur"] .soft{display:none}
+  [data-entrance="blur"] .sharp{opacity:1}
+  /* Re-apply positional transforms per breakpoint: a blanket transform:none
+     can throw a mobile-positioned element off screen. Add yours here. */
+}
+
+/* The live flip, set by pinToFinalStates()/unpinFinalStates() in the JS. */
+.is-pinned .split .c,.is-pinned .split .w{opacity:1;transform:none}
+.is-pinned .reveal .part{opacity:1;transform:none;transition-delay:0s}
